@@ -3,6 +3,7 @@ import { auth } from "../config/firebase";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
 });
 
 // Request Interceptor to attach Authorization header
