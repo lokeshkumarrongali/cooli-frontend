@@ -6,18 +6,25 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request Interceptor to attach Authorization header
 api.interceptors.request.use(
   async (config) => {
-    const user = auth.currentUser;
-    if (user) {
+    // 1. Prioritize token from localStorage for immediate availability
+    let token = localStorage.getItem("token");
+
+    // 2. Fallback: If not in localStorage, try getting it from Firebase auth
+    if (!token && auth.currentUser) {
       try {
-        const token = await user.getIdToken();
-        config.headers.Authorization = `Bearer ${token}`;
+        token = await auth.currentUser.getIdToken();
+        if (token) localStorage.setItem("token", token);
       } catch (error) {
-        // Token error handled silently; retry logic will catch it if needed
+        console.warn("Failed to get token from Firebase:", error.message);
       }
     }
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error) => {

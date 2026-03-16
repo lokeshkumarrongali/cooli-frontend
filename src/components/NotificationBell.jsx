@@ -41,6 +41,7 @@ function NotificationBell() {
   // ---- Real-time socket: prepend new notif + fire toast ----
   useEffect(() => {
     if (!profileData?._id) return;
+    socket.auth.token = localStorage.getItem("token");
     socket.connect();
     socket.emit("register", profileData._id);
     socket.on("notification", (newNotif) => {

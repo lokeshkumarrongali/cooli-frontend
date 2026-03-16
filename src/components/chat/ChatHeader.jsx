@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import { sanitizeImageUrl } from "../../api/imageUtils";
 
 function ChatHeader({ otherUser, isOnline }) {
   const navigate = useNavigate();
 
   // Handle fallback if otherUser is missing
   const name = otherUser?.sharedProfile?.name || otherUser?.employerProfile?.businessName || "Worker";
-  const avatar = otherUser?.sharedProfile?.photo || `https://api.dicebear.com/7.x/initials/svg?seed=${name}`;
+  const avatar = sanitizeImageUrl(otherUser?.sharedProfile?.photo, `https://api.dicebear.com/7.x/initials/svg?seed=${name}`);
 
   const getAvailabilityStatus = () => {
     const availability = otherUser?.workerProfile?.availability;

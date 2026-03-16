@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { sanitizeImageUrl } from "../api/imageUtils";
 
 function WorkerCard({ worker }) {
   const navigate = useNavigate();
 
-  const avatarUrl = worker.photo ||
-    `https://api.dicebear.com/7.x/avataaars/svg?seed=${worker._id}`;
+  const avatarUrl = sanitizeImageUrl(worker.photo, `https://api.dicebear.com/7.x/avataaars/svg?seed=${worker._id}`);
 
   const stars = (rating) => {
     const full = Math.floor(rating);

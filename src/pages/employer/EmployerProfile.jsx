@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "../../context/useUserProfile";
 import api from "../../api/axios";
 import ImageUploader from "../../components/ImageUploader";
+import { sanitizeImageUrl } from "../../api/imageUtils";
 
 function EmployerProfile() {
   const { profileData, updateSharedProfile, updateEmployerProfile } = useUserProfile();
@@ -135,7 +136,7 @@ function EmployerProfile() {
         <div className="card" style={{ marginTop: "0", position: "relative", zIndex: 1 }}>
           <div style={{ display: "flex", gap: "var(--space-6)", alignItems: "flex-end", marginBottom: "var(--space-6)" }}>
             <div className="avatar-wrapper" style={{ position: "relative" }}>
-              <img src={profileData.sharedProfile?.photo || "https://api.dicebear.com/7.x/avataaars/svg?seed=Employer"} alt="Profile" style={{ opacity: uploading ? 0.5 : 1 }} />
+              <img src={sanitizeImageUrl(profileData.sharedProfile?.photo, "https://api.dicebear.com/7.x/avataaars/svg?seed=Employer")} alt="Profile" style={{ opacity: uploading ? 0.5 : 1 }} />
               <div 
                 className="avatar-edit-overlay" 
                 onClick={() => document.getElementById("photo-upload").click()}

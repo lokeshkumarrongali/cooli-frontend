@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchWorkerById } from "../../services/workerService";
 import api from "../../api/axios";
+import { sanitizeImageUrl } from "../../api/imageUtils";
 
 function WorkerProfilePage() {
   const { id } = useParams();
@@ -35,7 +36,7 @@ function WorkerProfilePage() {
     );
   }
 
-  const avatarUrl = worker.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${worker._id}`;
+  const avatarUrl = sanitizeImageUrl(worker.photo, `https://api.dicebear.com/7.x/avataaars/svg?seed=${worker._id}`);
 
   const fullAddress = [
     worker.address?.village,

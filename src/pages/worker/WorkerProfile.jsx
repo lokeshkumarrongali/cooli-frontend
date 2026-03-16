@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import ImageUploader from "../../components/ImageUploader";
 import SkillTagSelector from "../../components/SkillTagSelector";
 import JobCard from "../../components/JobCard";
+import { sanitizeImageUrl } from "../../api/imageUtils";
 
 function WorkerProfile() {
   const { profileData, updateSharedProfile, updateWorkerProfile } = useUserProfile();
@@ -199,7 +200,7 @@ function WorkerProfile() {
         <div className="card" style={{ marginTop: "0", position: "relative", zIndex: 1 }}>
           <div style={{ display: "flex", gap: "var(--space-6)", alignItems: "flex-end", marginBottom: "var(--space-6)" }}>
             <div className="avatar-wrapper" style={{ position: "relative" }}>
-              <img src={profileData.sharedProfile?.photo || "https://api.dicebear.com/7.x/avataaars/svg?seed=Cooli"} alt="Profile" style={{ opacity: uploading ? 0.5 : 1 }} />
+              <img src={sanitizeImageUrl(profileData.sharedProfile?.photo)} alt="Profile" style={{ opacity: uploading ? 0.5 : 1 }} />
               <div 
                 className="avatar-edit-overlay" 
                 onClick={() => document.getElementById("photo-upload").click()}

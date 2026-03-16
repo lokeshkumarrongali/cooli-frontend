@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { useUserProfile } from "../../context/useUserProfile";
+import { sanitizeImageUrl } from "../../api/imageUtils";
 
 function Messages() {
   const [conversations, setConversations] = useState([]);
@@ -48,7 +49,7 @@ function Messages() {
           {conversations.map((convo) => {
             const otherUser = getOtherParticipant(convo.participants);
             const title = otherUser?.employerProfile?.businessName || otherUser?.sharedProfile?.name || "Cooli User";
-            const avatar = otherUser?.sharedProfile?.photo || `https://api.dicebear.com/7.x/initials/svg?seed=${title}`;
+            const avatar = sanitizeImageUrl(otherUser?.sharedProfile?.photo, `https://api.dicebear.com/7.x/initials/svg?seed=${title}`);
             
             return (
               <div 

@@ -43,6 +43,8 @@ export const AuthProvider = ({ children }) => {
           } catch (err) {
             console.error("Auto-sync failed:", err.message);
           }
+        } else {
+          localStorage.removeItem("token");
         }
         setLoading(false);
       }
@@ -66,6 +68,8 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log("Synchronizing user with backend...");
       const token = await fUser.getIdToken();
+      // Store token early so interceptors can use it for subsequent calls if needed
+      localStorage.setItem("token", token);
       
       const response = await api.post("/auth/login", {}, {
         headers: { Authorization: `Bearer ${token}` }
@@ -83,6 +87,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error("Backend sync failed:", err.response?.status, err.response?.data || err.message);
       const errorMsg = err.response?.data?.message || err.message || "Failed to synchronize session";
+      localStorage.removeItem("token");
       await signOut(auth);
       setUser(null);
       setFirebaseUser(null);
@@ -171,6 +176,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       await signOut(auth);
+      localStorage.removeItem("token");
       setUser(null);
       setFirebaseUser(null);
     } catch (err) {

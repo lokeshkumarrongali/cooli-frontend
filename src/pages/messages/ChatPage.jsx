@@ -24,7 +24,10 @@ function ChatPage() {
     fetchMessages();
     markRead();
 
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) {
+      socket.auth.token = localStorage.getItem("token");
+      socket.connect();
+    }
     socket.emit("joinConversation", conversationId);
 
     const handleReceiveMessage = (newMessage) => {

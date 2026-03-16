@@ -7,9 +7,10 @@ import Logo from "./Logo";
 import NotificationBell from "./NotificationBell";
 import socket from "../services/socket";
 import api from "../api/axios";
+import { sanitizeImageUrl } from "../api/imageUtils";
 
 function Navbar() {
-  const { logout, firebaseUser } = useAuth();
+  const { logout, firebaseUser, isAuthenticated } = useAuth();
   const { activeRole } = useRole();
   const { profileData } = useUserProfile();
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!profileData?._id) return;
+    if (!profileData?._id || !isAuthenticated) return;
 
     // Initial fetch
     api.get("/chat/unread-count")
@@ -31,7 +32,10 @@ function Navbar() {
       }
     };
 
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) {
+      socket.auth.token = localStorage.getItem("token");
+      socket.connect();
+    }
     socket.on("receiveMessage", handleNewMessage);
 
     return () => {
@@ -108,7 +112,7 @@ function Navbar() {
             </div>
 
             <img 
-              src={profileData?.sharedProfile?.photo || "https://api.dicebear.com/7.x/avataaars/svg?seed=Cooli"} 
+              src={sanitizeImageUrl(profileData?.sharedProfile?.photo)} 
               alt="Avatar" 
               className="navbar-avatar"
               onClick={() => navigate(activeRole ? `/${activeRole}/profile` : "/dashboard")}
