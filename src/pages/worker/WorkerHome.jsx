@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "../../context/useUserProfile";
 import api from "../../api/axios";
 import JobCard from "../../components/JobCard";
+import RecommendedJobs from "../../components/RecommendedJobs";
 
 function WorkerHome() {
   const navigate = useNavigate();
@@ -99,27 +100,7 @@ function WorkerHome() {
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-6)" }}>
         <div>
-          <div className="section-header">
-            <span className="section-icon">⭐</span>
-            <h3 style={{ margin: 0 }}>Recommended Jobs For You</h3>
-          </div>
-          
-          {recommendedJobs.length === 0 ? (
-            <div className="card" style={{ textAlign: "center", padding: "30px" }}>
-              <p className="text-muted">No specific recommendations right now. Ensure your skills are added!</p>
-              <button className="btn btn-secondary btn-sm" onClick={() => navigate("/worker/jobs")}>Browse All Jobs</button>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: "15px" }}>
-              {recommendedJobs.map((job, idx) => (
-                <JobCard 
-                  key={job._id || idx}
-                  job={job}
-                  initiallySaved={savedJobIds.has(job._id || job.id)}
-                />
-              ))}
-            </div>
-          )}
+          <RecommendedJobs workerId={profileData?.sharedProfile?._id} />
         </div>
 
         <div>
