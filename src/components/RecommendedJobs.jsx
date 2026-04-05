@@ -58,7 +58,23 @@ const RecommendedJobs = ({ workerId: propWorkerId }) => {
     return (
       <div className="p-8 text-center bg-gray-50 rounded-lg flex flex-col items-center gap-3">
         <div className="text-gray-500 font-medium">No recommendations yet</div>
-        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+        <button 
+          onClick={async () => {
+            console.log("Manual trigger");
+            try {
+              const res = await api.get(`/jobs/recommended/${workerId}`);
+              console.log("Manual API response:", res.data);
+              setJobs(res.data?.data?.jobs || res.data?.data || []);
+            } catch (err) {
+              console.error("Manual API error:", err);
+            }
+          }}
+          className="mb-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium shadow"
+        >
+          Test Recommended API (workerId: {workerId || 'undefined'})
+        </button>
+
+        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition" onClick={() => window.location.href="/worker/profile"}>
           Update Skills
         </button>
       </div>
@@ -74,6 +90,20 @@ const RecommendedJobs = ({ workerId: propWorkerId }) => {
 
   return (
     <div className="w-full">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-xl font-bold">Recommended Jobs For You</h3>
+        <button 
+          onClick={async () => {
+            console.log("Manual trigger");
+            const res = await api.get(`/jobs/recommended/${workerId}`);
+            console.log("Manual API response:", res.data);
+          }}
+          className="px-3 py-1 bg-purple-600 text-white text-sm rounded shadow hover:bg-purple-700"
+        >
+          Test API manually
+        </button>
+      </div>
+      
       <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-3">
         {normalizedJobs.slice(0, 5).map((job, index) => {
           const score = job.score || 0;

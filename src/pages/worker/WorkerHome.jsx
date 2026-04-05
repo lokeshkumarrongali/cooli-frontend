@@ -32,30 +32,7 @@ function WorkerHome() {
   const completionScore = calculateCompletion();
 
   useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        const skillsArray = profileData?.workerProfile?.skills || [];
-        const skillsQuery = skillsArray.join(",");
-        
-        let url = "/jobs"; // Fallback to all jobs if no skills
-        if (skillsQuery) {
-          url = `/jobs/search?q=${skillsQuery}`;
-        }
-        
-        const response = await api.get(url);
-        if (response.data?.data) {
-          setRecommendedJobs(response.data.data.slice(0, 3)); // Top 3
-        }
-      } catch (error) {
-        console.error("Failed to load recommendations", error);
-      }
-    };
-    if (profileData) {
-      fetchRecommendations();
-    }
-  }, [profileData]);
-
-  useEffect(() => {
+    // Old job fetching logic removed to allow RecommendedJobs component to handle it 
     api.get("/users/saved-jobs").then(res => {
       if (res.data?.data) {
         setSavedJobIds(new Set(res.data.data.map(j => j._id || j.id)));
@@ -100,7 +77,7 @@ function WorkerHome() {
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-6)" }}>
         <div>
-          <RecommendedJobs workerId={profileData?.sharedProfile?._id} />
+          <RecommendedJobs workerId={profileData?._id} />
         </div>
 
         <div>
