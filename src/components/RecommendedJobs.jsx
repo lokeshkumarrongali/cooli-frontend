@@ -1,28 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 
-const RecommendedJobs = ({ workerId }) => {
+const RecommendedJobs = ({ workerId: propWorkerId }) => {
+  // Use prop or grab from user context if missing
+  const workerId = propWorkerId; // fallback logic if we had user object: user?._id || propWorkerId
+  
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchRecommendedJobs = async () => {
+    console.log("RecommendedJobs mounted. workerId:", workerId);
+    if (!workerId) {
+      console.warn("No workerId available, skipping API fetch.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchJobs = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/jobs/recommended/${workerId}`);
-        const fetchedJobs = response.data?.data || response.data || [];
-        setJobs(fetchedJobs);
+        console.log(`Fetching from: /jobs/recommended/${workerId}`);
+        const res = await api.get(`/jobs/recommended/${workerId}`);
+        const data = res.data;
+        
+        console.log("API Response Data:", data);
+        const mappedJobs = data?.data?.jobs || data?.data || data || [];
+        setJobs(Array.isArray(mappedJobs) ? mappedJobs : []);
       } catch (err) {
-        setError("Failed to load recommended jobs");
+        console.error("Failed to fetch recommended jobs:", err);
+        setError("Failed to fetch recommended jobs");
       } finally {
         setLoading(false);
       }
     };
 
-    if (workerId) {
-      fetchRecommendedJobs();
-    }
+    fetchJobs();
   }, [workerId]);
 
   if (loading) {
