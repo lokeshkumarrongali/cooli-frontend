@@ -31,7 +31,7 @@ function JobDetails() {
 
   const handleApply = async () => {
     try {
-      await api.post(`/jobs/${id}/apply`);
+      await api.post(`/jobs/${id}/apply`, { workerId: profileData?._id });
       alert("Successfully applied for this job!");
       navigate("/worker/home");
     } catch (err) {

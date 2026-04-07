@@ -6,6 +6,7 @@ import { useUserProfile } from "../../context/useUserProfile";
 
 function SavedJobs() {
   const navigate = useNavigate();
+  const { profileData } = useUserProfile();
   const [savedJobs, setSavedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,6 +51,7 @@ function SavedJobs() {
             <JobCard 
               key={idx} 
               job={job} 
+              workerId={profileData?._id}
               initiallySaved={true} 
               onRemoveSaved={handleRemove} 
             />

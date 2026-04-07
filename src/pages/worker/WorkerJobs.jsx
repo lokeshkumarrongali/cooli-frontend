@@ -1,26 +1,28 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { useUserProfile } from "../../context/useUserProfile";
 import JobCard from "../../components/JobCard";
 import JobMap from "../../components/JobMap";
+import VoiceSearch from "../../components/VoiceSearch";
 
 function WorkerJobs() {
   const navigate = useNavigate();
   const { profileData } = useUserProfile();
+  const hasFetchedInitialRef = useRef(false);
 
   // Jobs state
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedJobIds, setSavedJobIds] = useState(new Set());
+  const [isVoiceFiltered, setIsVoiceFiltered] = useState(false);
 
   // Location state
   const [userCoords, setUserCoords] = useState(null);      // [lat, lng]
   const [locationStatus, setLocationStatus] = useState("pending"); // pending | granted | denied
 
-  // Filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [radius, setRadius] = useState(20);
+  const [radius, setRadius] = useState(10000); // Default to 'Anywhere' (10000km) to ensure jobs show up
   const [jobType, setJobType] = useState("all");
 
   // View mode
@@ -65,20 +67,45 @@ function WorkerJobs() {
       fetchJobs(null, null, "", radius, jobType);
       return;
     }
+
+    let watchId;
+    let isCancelled = false;
+    let hasOverridden = false; // Add a simple flag to user scope if needed, or simply use a ref.
+
+    // 1. Get a highly accurate initial position first
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const { latitude, longitude } = coords;
+      (pos) => {
+        if (isCancelled) return;
+        const { latitude, longitude } = pos.coords;
         setUserCoords([latitude, longitude]);
         setLocationStatus("granted");
         fetchJobs(latitude, longitude, "", radius, jobType);
+
+        // 2. Once we have a good initial fix, start tracking movement
+        watchId = navigator.geolocation.watchPosition(
+          (movePos) => {
+            if (isCancelled) return;
+            setUserCoords([movePos.coords.latitude, movePos.coords.longitude]);
+          },
+          (err) => console.warn("Watch position error:", err),
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        );
       },
       (err) => {
-        console.warn("Geolocation denied:", err);
+        if (isCancelled) return;
+        console.warn("Geolocation denied/error initially:", err);
         setLocationStatus("denied");
         fetchJobs(null, null, "", radius, jobType);
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 10000 }
     );
+
+    return () => {
+      isCancelled = true;
+      if (watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -113,46 +140,94 @@ function WorkerJobs() {
   // ── Search submit ──────────────────────────────────────────────────────────
   const handleSearch = (e) => {
     e.preventDefault();
+    setIsVoiceFiltered(false); // Manually searching clears voice state
     const [lat, lng] = userCoords ?? [null, null];
     fetchJobs(lat, lng, searchQuery, radius, jobType);
   };
 
+  const handleVoiceResults = (newJobs) => {
+    setJobs(newJobs);
+    setIsVoiceFiltered(true);
+  };
+
+  const clearVoiceSearch = () => {
+    setIsVoiceFiltered(false);
+    const [lat, lng] = userCoords ?? [null, null];
+    fetchJobs(lat, lng, searchQuery, radius, jobType);
+  };
+
+
+
   // ── UI helpers ─────────────────────────────────────────────────────────────
   const locationBadge = {
-    pending: { bg: "#fff3cd", color: "#856404", icon: "⏳", text: "Locating you…" },
-    granted: { bg: "#d3f9d8", color: "#2b8a3e", icon: "📍", text: "Location active" },
-    denied:  { bg: "#ffe3e3", color: "#c92a2a", icon: "⚠️", text: "Location unavailable — showing all open jobs" },
+    pending: { bg: "rgba(255, 193, 7, 0.15)", color: "#b78103", icon: "⏳", text: "Finding you…" },
+    granted: { bg: "rgba(34, 197, 94, 0.15)", color: "#15803d", icon: "🎯", text: "Location active" },
+    denied:  { bg: "rgba(239, 68, 68, 0.15)", color: "#b91c1c", icon: "⚠️", text: "Location off — global search" },
   }[locationStatus];
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "var(--space-4)", flexWrap: "wrap", gap: "12px" }}>
+      {/* ── Header Area ──────────────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "20px",
+        marginBottom: "30px",
+        padding: "20px 24px",
+        background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
+        borderRadius: "16px",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.05)",
+        border: "1px solid rgba(0,0,0,0.02)"
+      }}>
         <div>
-          <h1 className="page-title" style={{ marginBottom: "4px" }}>Discover Jobs</h1>
-          <p className="text-muted">Find matching opportunities near you.</p>
+          <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#111827", margin: "0 0 8px 0", letterSpacing: "-0.5px" }}>
+            Discover Jobs
+          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <p style={{ color: "#6b7280", fontSize: "14px", margin: 0, fontWeight: "500" }}>
+              Find matching opportunities near you
+            </p>
+            <div style={{ width: "4px", height: "4px", background: "#d1d5db", borderRadius: "50%" }} />
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: "6px",
+              background: locationBadge.bg, color: locationBadge.color,
+              padding: "4px 12px", borderRadius: "20px",
+              fontSize: "12px", fontWeight: "600",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
+            }}>
+              {locationBadge.icon} {locationBadge.text}
+            </div>
+            {userCoords && (
+              <div style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "SFMono-Regular, Consolas, monospace", background: "#f3f4f6", padding: "4px 8px", borderRadius: "6px" }}>
+                {userCoords[0].toFixed(4)}, {userCoords[1].toFixed(4)}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* View Toggle */}
         <div style={{
-          display: "flex", background: "#f1f3f5",
-          borderRadius: "10px", padding: "4px", gap: "4px"
+          display: "flex", background: "#f3f4f6",
+          borderRadius: "12px", padding: "4px", gap: "4px",
+          boxShadow: "inset 0 2px 4px rgba(0,0,0,0.02)"
         }}>
           {[
-            { id: "list", label: "☰  List View" },
-            { id: "map",  label: "🗺  Map View"  },
+            { id: "list", label: "☰  List" },
+            { id: "map",  label: "🗺  Map" },
           ].map(({ id, label }) => (
             <button
               key={id}
               onClick={() => setViewMode(id)}
               style={{
-                padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer",
-                fontSize: "13px", fontWeight: 600,
-                transition: "all 0.2s ease",
+                padding: "8px 24px", borderRadius: "8px", border: "none", cursor: "pointer",
+                fontSize: "14px", fontWeight: "600",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 background: viewMode === id ? "white" : "transparent",
-                color: viewMode === id ? "#0ca678" : "#868e96",
-                boxShadow: viewMode === id ? "0 2px 8px rgba(0,0,0,0.10)" : "none",
+                color: viewMode === id ? "#FC6A03" : "#6b7280",
+                boxShadow: viewMode === id ? "0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)" : "none",
               }}
             >
               {label}
@@ -161,64 +236,114 @@ function WorkerJobs() {
         </div>
       </div>
 
-      {/* ── Location Status Badge ───────────────────────────────────────────── */}
-      <div style={{
-        display: "inline-flex", alignItems: "center", gap: "6px",
-        background: locationBadge.bg, color: locationBadge.color,
-        padding: "6px 14px", borderRadius: "20px",
-        fontSize: "12px", fontWeight: 500, marginBottom: "var(--space-4)"
+      {/* ── Interactive Search Dashboard ─────────────────────────────────────── */}
+      <div style={{ 
+        marginBottom: "30px", 
+        padding: "16px 24px", 
+        background: "white", 
+        borderRadius: "16px", 
+        boxShadow: "0 10px 30px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02)",
+        border: "1px solid rgba(0,0,0,0.03)"
       }}>
-        {locationBadge.icon} {locationBadge.text}
-      </div>
-
-      {/* ── Filters ──────────────────────────────────────────────────────────── */}
-      <div className="card" style={{ marginBottom: "var(--space-5)", padding: "var(--space-4)" }}>
-        <form onSubmit={handleSearch} style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-            <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "15px", pointerEvents: "none" }}>🔍</span>
+        {/* Text Search Form */}
+        <form onSubmit={handleSearch} style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
+          
+          <div style={{ flex: "2 1 300px", display: "flex", alignItems: "center", gap: "12px", background: "#f8f9fa", padding: "12px 16px", borderRadius: "12px", border: "1px solid #e5e7eb", transition: "all 0.2s ease" }}>
+            <span style={{ fontSize: "18px", color: "#9ca3af" }}>🔍</span>
             <input
-              className="input"
               placeholder="Search jobs, skills, keywords…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: "38px", width: "100%", boxSizing: "border-box" }}
+              style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: "15px", fontWeight: "500", color: "#111827" }}
             />
           </div>
 
-          <select
-            className="input"
-            value={radius}
-            onChange={(e) => setRadius(Number(e.target.value))}
-            style={{ width: "140px", flexShrink: 0 }}
-          >
-            <option value={5}>📍 Within 5 km</option>
-            <option value={10}>📍 Within 10 km</option>
-            <option value={20}>📍 Within 20 km</option>
-            <option value={50}>📍 Within 50 km</option>
-          </select>
+          <div style={{ display: "flex", gap: "12px", flex: "1 1 auto", flexWrap: "nowrap" }}>
+            <select
+              value={radius}
+              onChange={(e) => setRadius(Number(e.target.value))}
+              style={{ flex: 1, padding: "12px 16px", borderRadius: "12px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "14px", fontWeight: "600", color: "#374151", outline: "none", cursor: "pointer", appearance: "none" }}
+            >
+              <option value={5}>📍 5 km</option>
+              <option value={10}>📍 10 km</option>
+              <option value={20}>📍 20 km</option>
+              <option value={50}>📍 50 km</option>
+              <option value={10000}>🌍 Anywhere</option>
+            </select>
 
-          <select
-            className="input"
-            value={jobType}
-            onChange={(e) => setJobType(e.target.value)}
-            style={{ width: "150px", flexShrink: 0 }}
-          >
-            <option value="all">All Job Types</option>
-            <option value="hourly">Hourly</option>
-            <option value="daily">Daily</option>
-            <option value="contract">Contract</option>
-          </select>
-
-          <button className="btn btn-primary" type="submit" style={{ flexShrink: 0, minWidth: "90px" }}>
-            Search
-          </button>
+            <select
+              value={jobType}
+              onChange={(e) => setJobType(e.target.value)}
+              style={{ flex: 1, padding: "12px 16px", borderRadius: "12px", border: "1px solid #e5e7eb", background: "#fff", fontSize: "14px", fontWeight: "600", color: "#374151", outline: "none", cursor: "pointer", appearance: "none" }}
+            >
+              <option value="all">⚡ All Types</option>
+              <option value="hourly">⏱ Hourly</option>
+              <option value="daily">📅 Daily</option>
+              <option value="contract">📝 Contract</option>
+            </select>
+            
+            <button type="submit" style={{ 
+              padding: "0 24px", 
+              background: "#FC6A03", 
+              color: "white", 
+              border: "none", 
+              borderRadius: "12px", 
+              fontSize: "15px", 
+              fontWeight: "700", 
+              cursor: "pointer", 
+              boxShadow: "0 4px 12px rgba(252, 106, 3, 0.25)",
+              transition: "transform 0.2s, boxShadow 0.2s"
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(252, 106, 3, 0.3)"; }}
+            onMouseOut={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(252, 106, 3, 0.25)"; }}
+            >
+              Search
+            </button>
+          </div>
         </form>
+
+        {/* Voice Filter Indicator */}
+        {isVoiceFiltered && (
+          <div style={{ 
+            marginTop: "15px", 
+            padding: "10px 15px", 
+            backgroundColor: "#e7f5ff", 
+            borderRadius: "8px", 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center",
+            border: "1px solid #a5d8ff"
+          }}>
+            <span style={{ fontSize: "13px", color: "#1971c2", fontWeight: "600" }}>
+              ✨ Showing top AI-suggested jobs for your voice search
+            </span>
+            <button 
+              onClick={clearVoiceSearch}
+              style={{ 
+                background: "transparent", 
+                border: "none", 
+                color: "#1971c2", 
+                fontSize: "12px", 
+                fontWeight: "bold", 
+                cursor: "pointer", 
+                textDecoration: "underline" 
+              }}
+            >
+              Clear voice search
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ── Map View ─────────────────────────────────────────────────────────── */}
-      {viewMode === "map" && (
-        <div style={{ marginBottom: "var(--space-6)" }}>
-          {locationStatus === "denied" && (
+      {/* ── Main Content Split Layout ───────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flexWrap: "wrap" }}>
+        
+        {/* Left Column: Map or List View */}
+        <div style={{ flex: "1 1 65%", minWidth: "300px" }}>
+          {/* ── Map View ─────────────────────────────────────────────────────────── */}
+          {viewMode === "map" && (
+            <div style={{ marginBottom: "var(--space-6)" }}>
+              {locationStatus === "denied" && (
             <div style={{
               background: "#fff3cd", border: "1px solid #ffc107",
               borderRadius: "10px", padding: "14px 18px",
@@ -276,31 +401,71 @@ function WorkerJobs() {
               ))}
             </div>
           ) : jobs.length === 0 ? (
-            <div className="card" style={{ textAlign: "center", padding: "var(--space-8)" }}>
-              <span style={{ fontSize: "3rem" }}>📭</span>
-              <h3 className="mt-4">No open jobs found</h3>
-              <p className="text-muted">Try expanding the radius or changing your search terms.</p>
-              <button className="btn btn-secondary" style={{ marginTop: "16px" }} onClick={() => setRadius(50)}>
-                Expand to 50 km
-              </button>
+            <div className="card" style={{ 
+              textAlign: "center", 
+              padding: "var(--space-10) var(--space-4)", 
+              border: "2px dashed #eee",
+              backgroundColor: "#fafafa"
+            }}>
+              <div style={{ fontSize: "4rem", marginBottom: "20px" }}>🕵️‍♂️</div>
+              <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#2d3436" }}>No jobs found matching your criteria</h3>
+              <p className="text-muted" style={{ maxWidth: "400px", margin: "10px auto 25px auto", lineHeight: 1.5 }}>
+                Try expanding your search radius or using different keywords to find more opportunities.
+              </p>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                <button className="btn btn-primary" onClick={() => setRadius(50)}>
+                  Expand to 50 km
+                </button>
+                <button className="btn btn-secondary" onClick={() => {setSearchQuery(""); setJobType("all");}}>
+                  Clear Filters
+                </button>
+              </div>
             </div>
           ) : (
-            <div style={{ display: "grid", gap: "var(--space-4)" }}>
-              <p className="text-muted" style={{ fontSize: "13px" }}>
-                Showing <strong>{jobs.length}</strong> {jobs.length === 1 ? "job" : "jobs"}
-                {userCoords && ` within ${radius} km`}
-              </p>
-              {jobs.map((job) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#111827" }}>
+                  Available Matches
+                </h3>
+                <span style={{ background: "#f3f4f6", padding: "4px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: "700", color: "#4b5563" }}>
+                  {jobs.length} Result{jobs.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {jobs.map((job, index) => (
                 <JobCard
-                  key={job._id}
+                  key={job._id || job.id}
                   job={job}
-                  initiallySaved={savedJobIds.has(job._id)}
+                  workerId={profileData?._id}
+                  initiallySaved={savedJobIds.has(job._id || job.id)}
+                  isTopPick={index === 0}
+                  userCoords={userCoords}
                 />
               ))}
             </div>
           )}
         </>
       )}
+      </div>
+
+        {/* Right Column: Voice Search Sidebar */}
+        <div style={{ 
+          flex: "1 1 30%", 
+          maxWidth: "350px", 
+          background: "white", 
+          padding: "30px 20px", 
+          borderRadius: "16px", 
+          boxShadow: "0 10px 30px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02)",
+          border: "1px solid rgba(0,0,0,0.03)",
+          position: "sticky",
+          top: "80px"
+        }}>
+          <h3 style={{ textAlign: "center", fontSize: "16px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
+            AI Assistant
+          </h3>
+          <VoiceSearch onResults={handleVoiceResults} userCoords={userCoords} />
+        </div>
+
+      </div>
     </div>
   );
 }

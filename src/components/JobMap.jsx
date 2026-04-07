@@ -142,9 +142,17 @@ export default function JobMap({ jobs = [], userCoords, radius = 10, loading = f
       markersRef.current = [];
 
       pinned.forEach((job) => {
-        const [lng, lat] = job.location.coordinates;
+        let jLng = job.location.coordinates[0];
+        let jLat = job.location.coordinates[1];
+        
+        // Auto-detect Lat/Lng inversion. (e.g. India Lng: 70-90, Lat: 8-35)
+        if (jLng < 40 && jLat > 60) {
+           jLng = job.location.coordinates[1];
+           jLat = job.location.coordinates[0];
+        }
+
         const marker = leaflet
-          .marker([lat, lng], { icon: makeJobIcon(leaflet, false) })
+          .marker([jLat, jLng], { icon: makeJobIcon(leaflet, false) })
           .addTo(instanceRef.current);
 
         const employerName =

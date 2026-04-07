@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   /* Color Tokens */
   --color-primary: #FC6A03;
@@ -410,3 +414,37 @@ body {
 .mt-4 { margin-top: var(--space-4); }
 .gap-2 { gap: var(--space-2); }
 .gap-4 { gap: var(--space-4); }
+
+/* Job Card Specifics */
+.job-card-interactive {
+  background: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.job-card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.top-pick-card {
+  border: 1px solid #ffebb7 !important;
+  background: #fffdf9 !important;
+}
+
+.badge-top-pick {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #FC6A03;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-bottom-right-radius: 12px;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.btn-icon:hover {
+  transform: scale(1.1);
+}
