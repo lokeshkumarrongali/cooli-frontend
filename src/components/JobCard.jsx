@@ -5,7 +5,14 @@ import api from '../api/axios';
 const JobCard = ({ job, workerId, onApplySuccess, isTopPick, initiallySaved, onRemoveSaved, userCoords }) => {
   const navigate = useNavigate();
   const [applying, setApplying] = useState(false);
-  const [applied, setApplied] = useState(false);
+  const [applied, setApplied] = useState(() => {
+    if (job.hasApplied) return true;
+    if (!job.applicants || !Array.isArray(job.applicants)) return false;
+    return job.applicants.some(app => {
+      const wId = app.workerId?._id || app.workerId;
+      return String(wId) === String(workerId);
+    });
+  });
   const [isSaved, setIsSaved] = useState(initiallySaved || false);
 
   const matchPercent = Math.round((job.hasOwnProperty('skillMatch') ? job.skillMatch : (job.score || 0)) * 100);
@@ -196,16 +203,16 @@ const JobCard = ({ job, workerId, onApplySuccess, isTopPick, initiallySaved, onR
       <button 
         onClick={handleApply}
         disabled={applied || applying}
-        className={`btn ${applied ? 'btn-secondary' : 'btn-primary'}`}
+        className={`btn ${applied ? 'btn-success' : 'btn-primary'}`}
         style={{ 
           width: '100%', 
           marginTop: '4px',
-          backgroundColor: applied ? '#e6fcf5' : 'var(--color-primary)',
-          color: applied ? '#0ca678' : 'white',
-          border: applied ? '1px solid #12b886' : 'none'
+          backgroundColor: applied ? 'green' : 'var(--color-primary)',
+          color: 'white',
+          border: 'none'
         }}
       >
-        {applying ? 'Processing...' : applied ? '✓ Successfully Applied' : 'Apply Now'}
+        {applying ? 'Processing...' : applied ? 'Applied' : 'Apply Now'}
       </button>
     </div>
   );
