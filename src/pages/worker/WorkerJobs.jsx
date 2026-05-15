@@ -4,7 +4,6 @@ import api from "../../api/axios";
 import { useUserProfile } from "../../context/useUserProfile";
 import JobCard from "../../components/JobCard";
 import JobMap from "../../components/JobMap";
-import VoiceSearch from "../../components/VoiceSearch";
 
 function WorkerJobs() {
   const navigate = useNavigate();
@@ -446,24 +445,6 @@ function WorkerJobs() {
         </>
       )}
       </div>
-
-        {/* Right Column: Voice Search Sidebar */}
-        <div style={{ 
-          flex: "1 1 30%", 
-          maxWidth: "350px", 
-          background: "white", 
-          padding: "30px 20px", 
-          borderRadius: "16px", 
-          boxShadow: "0 10px 30px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02)",
-          border: "1px solid rgba(0,0,0,0.03)",
-          position: "sticky",
-          top: "80px"
-        }}>
-          <h3 style={{ textAlign: "center", fontSize: "16px", fontWeight: "700", color: "#374151", marginBottom: "20px" }}>
-            AI Assistant
-          </h3>
-          <VoiceSearch onResults={handleVoiceResults} userCoords={userCoords} />
-        </div>
 
       </div>
     </div>

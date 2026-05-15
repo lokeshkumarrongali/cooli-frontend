@@ -158,62 +158,7 @@ function WorkerHome() {
         ))}
       </div>
       
-      {/* 🤖 AI Voice Discovery Showcase */}
-      <div className="ai-onboarding-card">
-        <div style={{
-          position: 'absolute',
-          top: '15px',
-          right: '20px',
-          backgroundColor: '#FC6A03',
-          color: 'white',
-          padding: '5px 12px',
-          borderRadius: '30px',
-          fontSize: '10px',
-          fontWeight: 900,
-          letterSpacing: '1px'
-        }}>
-          AI POWERED
-        </div>
 
-        <div style={{ display: 'flex', gap: '25px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="ai-pulse-icon">🎭</div>
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', color: '#2d3436', fontWeight: 800 }}>Voice Discovery</h2>
-            <p style={{ margin: 0, fontSize: '15px', color: '#636e72', lineHeight: 1.5 }}>
-              Just speak into the microphone to find specific jobs. Try saying what you do in your local language!
-            </p>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <button 
-              className="btn btn-primary"
-              onClick={() => navigate('/worker/jobs')}
-              style={{ padding: '15px 30px', borderRadius: '14px', fontSize: '14px', fontWeight: 800 }}
-            >
-              Start Discovery →
-            </button>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '25px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', fontWeight: 800, color: '#adb5bd', textTransform: 'uppercase' }}>Examples:</span>
-          {["\"Driver job kavali\"", "\"Cleaning jobs near me\"", "\"Electrician work\""].map(cmd => (
-            <div 
-              key={cmd}
-              style={{ 
-                backgroundColor: 'rgba(252, 106, 3, 0.03)', 
-                border: '1px dashed #fd7e14', 
-                padding: '8px 16px', 
-                borderRadius: '10px', 
-                fontSize: '13px', 
-                color: '#fd7e14',
-                fontWeight: 600
-              }}
-            >
-              {cmd}
-            </div>
-          ))}
-        </div>
-      </div>
 
       <div className="main-content-split">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
